@@ -5,15 +5,14 @@ const generateTokenAndSetCookie = require("../utils/generateToken");
 const signup = async (req, res) => {
     const { email, phone, password, role } = req.body;
     try {
-        const existingUser = await Customer.findOne({ $or: [{ email }, { phone }] });
+        const existingUser = await Customer.findOne({ email } || { phone });
         if (existingUser) {
-            return res.status(200).json({ success: true, message: "user already exists" });
+            return res.status(400).json({ success: false, message: "user already exists" });
         }
 
         const hashPassword = await bcrypt.hash(password, 10);
         const verificationToken = String(Math.floor(100000 + Math.random() * 400000));
         const expirationTime = new Date().getTime() + 60 * 60 * 1000; // expiration time
-        console.log("otp :" ,verificationToken);
 
         const newUser = new Customer({
             email,
@@ -23,6 +22,7 @@ const signup = async (req, res) => {
             verificationTokenExpiration: expirationTime,
             role,
         });
+        console.log("otp :" ,verificationToken);
 
         generateTokenAndSetCookie(res, newUser._id);
         await newUser.save();
